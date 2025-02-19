@@ -102,7 +102,7 @@ namespace Core1 {
   //////////////////////////////////////////////////////////////////////
   // DMA and interrupt handling
 
-  void dma_isr() {
+  void __not_in_flash_func(dma_isr)() {
     test = sio_hw->cpuid;
     if (dma_channel_get_irq1_status(dmachan1)) {
       dma_channel_set_read_addr(dmachan1, dmabuf1, false);
@@ -154,7 +154,7 @@ namespace Core1 {
 
   int32_t pwm;
   
-  void filler_pwm() {
+  void __not_in_flash_func(filler_pwm)() {
     /* We want value=0 to map to K/2 and we want half a step
        to exist for k=0 and k=K. Let's check our math:
 
@@ -177,7 +177,6 @@ namespace Core1 {
       pwm = K;
 
     int32_t now;
-    Ringbuffer::lock();
     if (kremaining < fremaining) {
       now = kremaining;
       kremaining = 0;
@@ -187,7 +186,6 @@ namespace Core1 {
       fremaining = 0;
       kremaining -= now;
     }
-    Ringbuffer::unlock();
     if (now <= 0)
       return;
     now ++;
@@ -204,7 +202,7 @@ namespace Core1 {
   
   void (*filler_current)() = 0;
 
-  void core1_main() {
+  void __not_in_flash_func(core1_main)() {
     init_dmabuf();
     init_dmachannels();
     multicore_fifo_push_blocking(0);
@@ -213,22 +211,20 @@ namespace Core1 {
     ModulationMode mode = ModulationMode::PWM;
     filler_current = &filler_pwm;
 
-    Ringbuffer::lock();
     //    test = 0;
     value = 0; // mid range
     kremaining = 0;
     fremaining = 0;
     fillptr = 0;
-    Ringbuffer::unlock();
 
     bool led = false;
     ledoff();
 
     while (true) {
-      Ringbuffer::lock();
       test += 10;
       test2 += 1;
       if (kremaining == 0) {
+      Ringbuffer::lock();
         if (Ringbuffer::empty()) {
           value -= 3;
           //          ledset(value & 8192);
@@ -238,22 +234,19 @@ namespace Core1 {
           value = *Ringbuffer::readptr();
           Ringbuffer::readoffset ++;
         }
+      Ringbuffer::unlock();
         kremaining = dblbuf_samplerepeats;
         if (dblbuf_logK != logK)
           set_logK(dblbuf_logK);
       }
-      Ringbuffer::unlock();
 
       if (refill) {
-        Ringbuffer::lock();
         fremaining = DMABUFSIZE;
         fillptr = (nextbuf) ? dmabuf2 : dmabuf1;
         nextbuf = !nextbuf;
-        Ringbuffer::unlock();
         refill = false;
       }
 
-      Ringbuffer::lock();
       if (dblbuf_mode != mode) {
         mode = dblbuf_mode;
         switch (mode) {
@@ -263,7 +256,6 @@ namespace Core1 {
         }
         y0 = sigma0 = 0;
       }
-      Ringbuffer::unlock();
       
       filler_current();
     }
@@ -274,25 +266,19 @@ namespace Core1 {
   // Public interface
 
   void setPeriod(int fd_period_pwmclock) {
-    Ringbuffer::lock();
     dblbuf_samplerepeats = fd_period_pwmclock;
-    Ringbuffer::unlock();
   }
 
   void setPWMClock(int logK) {
-    Ringbuffer::lock();
     dblbuf_logK = logK;
-    Ringbuffer::unlock();
   }
 
   void setMode(ModulationMode m) {
-    Ringbuffer::lock();
     dblbuf_mode = m;
-    Ringbuffer::unlock();
   }
 
   void start() {
-    sleep_ms(500);
+    sleep_ms(5);
     multicore_reset_core1();
     multicore_fifo_pop_blocking(); // returns a 0
     USB::sendtext("hello");
@@ -300,12 +286,12 @@ namespace Core1 {
     if (dblbuf_logK != logK)
       set_logK(dblbuf_logK);
     USB::reportint("test", test);
-    sleep_ms(500);
+    sleep_ms(5);
     multicore_launch_core1(&core1_main);
     multicore_fifo_pop_blocking(); // returns a 0
     USB::reportint("dma1", int32_t(dmabuf1));
     USB::reportint("dma2", int32_t(dmabuf2));
     USB::reportint("test", test);
-    sleep_ms(500);
+    sleep_ms(5);
   }
 }

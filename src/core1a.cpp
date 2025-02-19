@@ -1,13 +1,12 @@
 
 
   
-  void filler_sdm() {
+void __not_in_flash_func(filler_sdm)() {
     int32_t sigma = sigma0;
     int32_t x = value;
     int32_t y = y0;
     
     int32_t now;
-    Ringbuffer::lock();
     if (kremaining < fremaining) {
       now = kremaining;
       kremaining = 0;
@@ -17,7 +16,6 @@
       fremaining = 0;
       kremaining -= now;
     }
-    Ringbuffer::unlock();
     if (now <= 0)
       return;  
     now ++;
@@ -35,7 +33,7 @@
     y0 = y;
   }
 
-  void filler_sdpwm() {
+void __not_in_flash_func(filler_sdpwm)() {
     /* Let's check the math:
        
        import numpy as np
@@ -69,7 +67,6 @@
     int32_t y = y0;
     
     int32_t now;
-    Ringbuffer::lock();
     if (kremaining < fremaining) {
       now = kremaining;
       kremaining = 0;
@@ -79,7 +76,6 @@
       fremaining = 0;
       kremaining -= now;
     }
-    Ringbuffer::unlock();
     if (now <= 0)
       return;    
     now ++;
