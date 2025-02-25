@@ -22,7 +22,7 @@ void __not_in_flash_func(filler_sdm)() {
     while (--now) {
       sigma += x - y;
       if (sigma > 0) {
-        *fillptr++ = K;
+        *fillptr++ = K | (K<<16);
         y = 32768;
       } else {
         *fillptr++ = 0;
@@ -82,10 +82,10 @@ void __not_in_flash_func(filler_sdpwm)() {
     while (--now) {
       sigma += x - y;
       if (sigma > 0) {
-        *fillptr++ = pwm + 1;
+        *fillptr++ = (pwm + 1) | ((pwm + 1) << 16);
         y = absY;
       } else {
-        *fillptr++ = pwm;
+        *fillptr++ = pwm | (pwm << 16);
         y = -absY;
       }
     }

@@ -2,10 +2,10 @@
 # Actual build process is through cmake.
 
 all: prep
-	+PICO_BOARD=pico_w cmake --build build 
+	+PICO_BOARD=pico cmake --build build 
 
 prep:
-	+PICO_BOARD=pico_w cmake -S . -B build
+	+PICO_BOARD=pico cmake -S . -B build
 
 upload: all
 	cp build/sigmadelta.uf2 /media/wagenaar/RPI-RP2/

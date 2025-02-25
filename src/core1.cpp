@@ -1,4 +1,3 @@
-
 #include <stdint.h>
 #include <stdlib.h>
 #include <hardware/pwm.h>
@@ -41,6 +40,7 @@ namespace Core1 {
     KZERO = 1 << (logK - 1);
     pwm_set_wrap(PWM_SLICE_AO, K - 1);
     pwm_set_gpio_level(GPIO_PWM_AO0, KZERO);    
+    pwm_set_gpio_level(GPIO_PWM_AO1, KZERO);    
   }
 
   void set_offset(int nom, int denom) {
@@ -52,6 +52,7 @@ namespace Core1 {
 
   void init_pwm() {
     gpio_set_function(GPIO_PWM_AO0, GPIO_FUNC_PWM);
+    gpio_set_function(GPIO_PWM_AO1, GPIO_FUNC_PWM);
     pwm_set_output_polarity(PWM_SLICE_AO, true, true);
     gpio_set_function(GPIO_PWM_AOREF, GPIO_FUNC_PWM);
     pwm_set_clkdiv_int_frac(PWM_SLICE_AO, 1, 0);
@@ -75,7 +76,7 @@ namespace Core1 {
     refill = false;
     nextbuf = 0;
     for (int n=0; n<2*DMABUFSIZE; n++)
-      dmabuf1[n] = KZERO;
+      dmabuf1[n] = KZERO; // + (KZERO << 16);
   }
   
   void init_dmabuf() {
@@ -190,7 +191,7 @@ namespace Core1 {
       return;
     now ++;
     while (--now) 
-      *fillptr++ = pwm;
+      *fillptr++ = pwm | (pwm << 16);
   }
 
   int32_t sigma0 = 0;
@@ -226,10 +227,11 @@ namespace Core1 {
       if (kremaining == 0) {
       Ringbuffer::lock();
         if (Ringbuffer::empty()) {
+          /*
           value -= 3;
-          //          ledset(value & 8192);
           if (value < -10000)
             value = 10000;
+          */
         } else {
           value = *Ringbuffer::readptr();
           Ringbuffer::readoffset ++;

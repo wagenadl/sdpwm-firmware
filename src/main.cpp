@@ -46,6 +46,20 @@ void report() {
 }  
 
 void parse_and_execute(char *input) {
+  char c = *input;
+  if (c=='-' || (c>='0' && c<='9')) {
+    Ringbuffer::lock();
+    if (Ringbuffer::full()) {
+      Ringbuffer::unlock();
+      USB::sendtext("Overrun");
+    } else {
+      *Ringbuffer::writeptr() = atoi(input);
+      Ringbuffer::writeoffset ++;
+      Ringbuffer::unlock();
+    }
+    return;
+  }
+  
   char *cmd = strtok(input, " ");
   USB::sendtext(cmd);
   char *arg1p = strtok(0, " ");
@@ -56,24 +70,12 @@ void parse_and_execute(char *input) {
     Core1::setMode(Core1::ModulationMode::SDM);
   else if (strcmp(cmd, "sdpwm")==0)
     Core1::setMode(Core1::ModulationMode::SDPWM);
-  else if (strcmp(cmd, "logk")==0) 
+  else if (strcmp(cmd, "logk")==0) // log pwm period in units of base clock
     Core1::setPWMClock(arg1);
-  else if (strcmp(cmd, "period")==0) 
+  else if (strcmp(cmd, "period")==0) // sample period in units of pwm period
     Core1::setPeriod(arg1);
-  else if ((*cmd >= '0' && *cmd <='9') || *cmd=='-') {
-    Ringbuffer::lock();
-    if (Ringbuffer::full()) {
-      Ringbuffer::unlock();
-      USB::sendtext("Overrun");
-    } else {
-      *Ringbuffer::writeptr() = atoi(cmd);
-      Ringbuffer::writeoffset ++;
-      Ringbuffer::unlock();
-    }
-  } else {
+  else 
     USB::sendtext("Command?");
-  } 
-  report();
 }
 
 
@@ -115,7 +117,7 @@ int main() {
         parse_and_execute(input);
         t0 = t;
       } else if (t - t0 > 100) {
-        report();
+        // report();
         t0 = t;
       }
     } else {
