@@ -19,7 +19,7 @@ namespace Core1 {
   // Constants
   constexpr int32_t KILO = 1000;
   constexpr int32_t MEGA = 1000 * KILO;
-  constexpr int32_t FCLOCK_HZ = 96 * MEGA; // base clock rate of PWM
+  constexpr int32_t FCLOCK_HZ = 125 * MEGA; // base clock rate of PWM
   constexpr int32_t logK_MIN = 4; // i.e., K=16, i.e., 96/16 = 6 MHz mod freq
   constexpr int32_t logK_MAX = 12; // i.e., K=4096, i.e., 23.4 kHz mod freq
   constexpr int32_t DMABUFSIZE = 1024; // Note that this is less than max(K)
@@ -129,7 +129,7 @@ namespace Core1 {
     channel_config_set_dreq(&cfg, dreq);
     channel_config_set_chain_to(&cfg, othchn);
     dma_channel_configure(chn, &cfg, dst, buf, nwords, start);
-}
+  }
 
   void init_dmairq() {
     irq_add_shared_handler(DMA_IRQ_1, &dma_isr,
@@ -145,6 +145,7 @@ namespace Core1 {
   // main code
   int dblbuf_logK = 5; // i.e., 3 MHz
   int dblbuf_samplerepeats = 64; // in terms of PWM periods, i.e., "48" kHz
+  int dblbuf_blockrepeats = 1; // how many times each sample is used
   ModulationMode dblbuf_mode = ModulationMode::PWM;
 
   int32_t value;
@@ -169,7 +170,7 @@ namespace Core1 {
 
        plt.clf()
        plt.plot(values, pwm);
-     */
+    */
     
     pwm = ((value + 32768) * K + 32768) >> 16;
     if (pwm < 0)
@@ -197,7 +198,7 @@ namespace Core1 {
   int32_t sigma0 = 0;
   int32_t y0 = 0;
 
-  #include "core1a.cpp"
+#include "core1a.cpp"
   //void filler_sdm() { }
   //void filler_sdpwm() { }
   
@@ -221,25 +222,36 @@ namespace Core1 {
     bool led = false;
     ledoff();
 
+    int irep = 0;
+    int dvalue = 0;
+    int value1 = 0;
     while (true) {
       test += 10;
       test2 += 1;
       if (kremaining == 0) {
-      Ringbuffer::lock();
+        Ringbuffer::lock();
         if (Ringbuffer::empty()) {
           /*
-          value -= 3;
-          if (value < -10000)
+            value -= 3;
+            if (value < -10000)
             value = 10000;
           */
         } else {
-          value = *Ringbuffer::readptr();
-          Ringbuffer::readoffset ++;
+          //if (irep<=0) {
+            value = *Ringbuffer::readptr();
+            Ringbuffer::readoffset ++;
+            //irep = dblbuf_blockrepeats;
+            //dvalue = (value1 - value) / irep;
+            //}
+            //value += dvalue;
+            //irep --;
         }
-      Ringbuffer::unlock();
+        Ringbuffer::unlock();
         kremaining = dblbuf_samplerepeats;
-        if (dblbuf_logK != logK)
+        if (dblbuf_logK != logK) {
           set_logK(dblbuf_logK);
+          y0 = sigma0 = 0;
+        }
       }
 
       if (refill) {
@@ -269,6 +281,10 @@ namespace Core1 {
 
   void setPeriod(int fd_period_pwmclock) {
     dblbuf_samplerepeats = fd_period_pwmclock;
+  }
+  
+  void setOver(int reps) {
+    dblbuf_blockrepeats = reps;
   }
 
   void setPWMClock(int logK) {

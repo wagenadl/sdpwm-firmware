@@ -45,18 +45,30 @@ void report() {
   USB::reportint("readptr", rp);
 }  
 
+bool paused = false;
+uint32_t pauseoffset = 0;
+
 void parse_and_execute(char *input) {
   char c = *input;
   if (c=='-' || (c>='0' && c<='9')) {
     Ringbuffer::lock();
-    if (Ringbuffer::full()) {
+    while (Ringbuffer::full()) {
       Ringbuffer::unlock();
-      USB::sendtext("Overrun");
-    } else {
+      if (paused) {
+        USB::sendtext("Overrun");
+        return;
+      }
+      sleep_us(1000);
+      Ringbuffer::lock();
+    } 
+
+    if (paused) {
+      *Ringbuffer::accessptr(pauseoffset++) = atoi(input);
+    } else {	
       *Ringbuffer::writeptr() = atoi(input);
       Ringbuffer::writeoffset ++;
-      Ringbuffer::unlock();
     }
+    Ringbuffer::unlock();
     return;
   }
   
@@ -64,7 +76,13 @@ void parse_and_execute(char *input) {
   USB::sendtext(cmd);
   char *arg1p = strtok(0, " ");
   int arg1 = arg1p ? atoi(arg1p) : 0;
-  if (strcmp(cmd, "pwm")==0)
+  if (strcmp(cmd, "pause")==0) {
+    paused = true;
+    pauseoffset = Ringbuffer::writeoffset;
+  } else if (strcmp(cmd, "go")==0) {
+    paused = false;
+    Ringbuffer::writeoffset = pauseoffset;
+  } else if (strcmp(cmd, "pwm")==0)
     Core1::setMode(Core1::ModulationMode::PWM);
   else if (strcmp(cmd, "sdm")==0)
     Core1::setMode(Core1::ModulationMode::SDM);
@@ -74,6 +92,8 @@ void parse_and_execute(char *input) {
     Core1::setPWMClock(arg1);
   else if (strcmp(cmd, "period")==0) // sample period in units of pwm period
     Core1::setPeriod(arg1);
+  else if (strcmp(cmd, "over")==0) // oversampling factor
+    Core1::setOver(arg1);
   else 
     USB::sendtext("Command?");
 }
@@ -101,13 +121,14 @@ int main() {
   USB::sendtext("started");
 
   bool connected = false;
-
+  paused = false;
   uint32_t t0 = time_us_32() >> 10;
   while (true) {
     Reset::reset_on_bootsel();
     USB::poll();
     if (USB::connected()) {
       if (!connected) {
+	paused = false;
         connected = true;
         USB::sendtext("sdpwm 1.0 - Daniel Wagenaar 2025");
       }

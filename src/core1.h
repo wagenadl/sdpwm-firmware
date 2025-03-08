@@ -18,6 +18,7 @@ namespace Core1 {
   };
 
   void setPeriod(int fs_period_pwmclock);
+  void setOver(int repeats);
   void setPWMClock(int logK);
   void setMode(ModulationMode m);
   void start();

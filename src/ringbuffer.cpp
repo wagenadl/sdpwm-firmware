@@ -11,7 +11,7 @@ namespace Ringbuffer {
   
   void initialize() {
     mutex_init(&mtx);
-    buffer = (int16_t*)malloc(bufsize * 2 * 3);
+    buffer = (int16_t*)malloc(bufsize * 2+10);
     reset();
   }
 

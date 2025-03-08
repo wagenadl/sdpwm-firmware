@@ -2,36 +2,37 @@
 
   
 void __not_in_flash_func(filler_sdm)() {
-    int32_t sigma = sigma0;
-    int32_t x = value;
-    int32_t y = y0;
+  int32_t x = value;
+  int32_t sigma = sigma0 + x;
     
-    int32_t now;
-    if (kremaining < fremaining) {
-      now = kremaining;
-      kremaining = 0;
-      fremaining -= now;
-    } else {
-      now = fremaining;
-      fremaining = 0;
-      kremaining -= now;
-    }
-    if (now <= 0)
-      return;  
-    now ++;
-    while (--now) {
-      sigma += x - y;
-      if (sigma > 0) {
-        *fillptr++ = K | (K<<16);
-        y = 32768;
-      } else {
-        *fillptr++ = 0;
-        y = -32768;
-      }
-    }
-    sigma0 = sigma;
-    y0 = y;
+  int32_t now;
+  if (kremaining < fremaining) {
+    now = kremaining;
+    kremaining = 0;
+    fremaining -= now;
+  } else {
+    now = fremaining;
+    fremaining = 0;
+    kremaining -= now;
   }
+  if (now <= 0)
+    return;  
+  uint32_t K1 = K | (K<<16);
+  int32_t dsigma1 = x - 32768;
+  int32_t dsigma2 = x + 32768;
+  now ++;
+  while (--now) {
+    if (sigma > 0) {
+      sigma += dsigma1;
+      *fillptr = K1;
+    } else {
+      sigma += dsigma2;
+      *fillptr = 0;
+    }
+    fillptr++;
+  };
+  sigma0 = sigma - x;
+}
 
 void __not_in_flash_func(filler_sdpwm)() {
     /* Let's check the math:
@@ -63,8 +64,10 @@ void __not_in_flash_func(filler_sdpwm)() {
     int32_t absY = 1 << (15 - logK);
     int32_t x = (value + 32768) - (pwm << (16 - logK)) - absY;
 
-    int32_t sigma = sigma0;
-    int32_t y = y0;
+    int32_t sigma = x; // sigma0 + x;
+    int32_t dsigma1 = x - absY;
+    int32_t dsigma2 = x + absY;
+    //    int32_t y = y0;
     
     int32_t now;
     if (kremaining < fremaining) {
@@ -78,17 +81,22 @@ void __not_in_flash_func(filler_sdpwm)() {
     }
     if (now <= 0)
       return;    
+    uint32_t pwm1 = (pwm + 1) | ((pwm + 1) << 16);
+    uint32_t pwm0 = pwm | (pwm << 16);
     now ++;
     while (--now) {
-      sigma += x - y;
+      //      sigma += x; // - y;
       if (sigma > 0) {
-        *fillptr++ = (pwm + 1) | ((pwm + 1) << 16);
-        y = absY;
+        sigma += dsigma1;
+        *fillptr = pwm1;
+        //        y = absY;
       } else {
-        *fillptr++ = pwm | (pwm << 16);
-        y = -absY;
+        sigma += dsigma2;
+        *fillptr = pwm0;
+        //        y = -absY;
       }
+      fillptr ++;
     }
-    sigma0 = sigma;
-    y0 = y;
+    // sigma0 = sigma - x;
+    //    y0 = y;
   }

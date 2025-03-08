@@ -11,19 +11,22 @@ namespace Ringbuffer {
   extern volatile uint32_t writeoffset;
   extern volatile uint32_t readoffset;
   extern int16_t *buffer;
-  constexpr int32_t logbufsize = 8;
+  constexpr int32_t logbufsize = 16; // 2^16 = 65536 samples or 128 KiB
   constexpr uint32_t bufsize = 1 << logbufsize; // samples
   constexpr uint32_t mask = bufsize - 1;
   extern mutex_t mtx;
   void initialize();
   void reset();
-  inline void lock() { mutex_enter_blocking(&mtx); }
-  inline void unlock() { mutex_exit(&mtx); }
+  inline void lock() {}// mutex_enter_blocking(&mtx); }
+  inline void unlock() {}// mutex_exit(&mtx); }
   inline int16_t const *readptr() {
     return buffer + (readoffset & mask);
   }
   inline int16_t *writeptr() {
     return buffer + (writeoffset & mask);
+  }
+  inline int16_t *accessptr(uint32_t offset) {
+    return buffer + (offset & mask);
   }
   inline bool full() {
     return writeoffset - readoffset >= bufsize;
