@@ -145,7 +145,7 @@ namespace Core1 {
   // main code
   int dblbuf_logK = 5; // i.e., 3 MHz
   int dblbuf_samplerepeats = 64; // in terms of PWM periods, i.e., "48" kHz
-  int dblbuf_blockrepeats = 1; // how many times each sample is used
+  int dblbuf_logblockrepeats = 0; // how many times each sample is used is (1<<x)
   ModulationMode dblbuf_mode = ModulationMode::PWM;
 
   int32_t value;
@@ -225,6 +225,7 @@ namespace Core1 {
     int irep = 0;
     int dvalue = 0;
     int value1 = 0;
+    value = 0;
     while (true) {
       test += 10;
       test2 += 1;
@@ -237,20 +238,22 @@ namespace Core1 {
             value = 10000;
           */
         } else {
-          //if (irep<=0) {
-            value = *Ringbuffer::readptr();
+          if (irep <= 0) {
+            value1 = *Ringbuffer::readptr();
             Ringbuffer::readoffset ++;
-            //irep = dblbuf_blockrepeats;
-            //dvalue = (value1 - value) / irep;
-            //}
-            //value += dvalue;
-            //irep --;
+            int lbr = dblbuf_logblockrepeats;
+            irep = 1 << lbr;
+            dvalue = (value1 - value) >> lbr;
+          }
+          value += dvalue;
+          irep --;
         }
         Ringbuffer::unlock();
         kremaining = dblbuf_samplerepeats;
         if (dblbuf_logK != logK) {
           set_logK(dblbuf_logK);
           y0 = sigma0 = 0;
+          value = 0; irep=-1;
         }
       }
 
@@ -269,6 +272,7 @@ namespace Core1 {
         case ModulationMode::SDPWM: filler_current = &filler_sdpwm; break;
         }
         y0 = sigma0 = 0;
+        value = 0; irep=-1;
       }
       
       filler_current();
@@ -284,7 +288,7 @@ namespace Core1 {
   }
   
   void setOver(int reps) {
-    dblbuf_blockrepeats = reps;
+    dblbuf_logblockrepeats = reps;
   }
 
   void setPWMClock(int logK) {

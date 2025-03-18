@@ -64,7 +64,7 @@ void __not_in_flash_func(filler_sdpwm)() {
     int32_t absY = 1 << (15 - logK);
     int32_t x = (value + 32768) - (pwm << (16 - logK)) - absY;
 
-    int32_t sigma = x; // sigma0 + x;
+    int32_t sigma = sigma0 + x;
     int32_t dsigma1 = x - absY;
     int32_t dsigma2 = x + absY;
     //    int32_t y = y0;
@@ -97,6 +97,6 @@ void __not_in_flash_func(filler_sdpwm)() {
       }
       fillptr ++;
     }
-    // sigma0 = sigma - x;
+    sigma0 = sigma - x;
     //    y0 = y;
   }
