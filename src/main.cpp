@@ -46,7 +46,39 @@ void report() {
 }  
 
 bool paused = false;
+bool binmode = false;
 uint32_t pauseoffset = 0;
+
+void playbinary(int16_t const *dat, int len) {
+  Ringbuffer::lock();
+  for (int k=0; k<len; k++) {
+    while (Ringbuffer::full()) {
+      Ringbuffer::unlock();
+      sleep_us(1000);
+      Ringbuffer::lock();
+    }
+    *Ringbuffer::writeptr() = dat[k];
+    Ringbuffer::writeoffset ++;    
+  }
+  Ringbuffer::unlock();
+}
+
+void handlebinary(int16_t const *dat, int len) {
+  for (int k=0; k<len; k++) {
+    if (dat[k]==0xffff8080) {
+      if (k)
+        playbinary(dat, k);
+      binmode = false;
+      int n = 2 * (len - 1 - k);
+      if (n > 0) {
+        memcpy(USB::inbuffer, (uint8_t const *)(dat + k + 1), n);
+        USB::inidx = n;
+      }
+      return;
+    }
+  } 
+  playbinary(dat, len);
+}
 
 void parse_and_execute(char *input) {
   char c = *input;
@@ -76,7 +108,9 @@ void parse_and_execute(char *input) {
   USB::sendtext(cmd);
   char *arg1p = strtok(0, " ");
   int arg1 = arg1p ? atoi(arg1p) : 0;
-  if (strcmp(cmd, "pause")==0) {
+  if (strcmp(cmd, "bin")==0) {
+    binmode = true;
+  } else if (strcmp(cmd, "pause")==0) {
     paused = true;
     pauseoffset = Ringbuffer::writeoffset;
   } else if (strcmp(cmd, "go")==0) {
@@ -121,6 +155,7 @@ int main() {
   USB::sendtext("started");
 
   bool connected = false;
+  int16_t binbuffer[32];
   paused = false;
   uint32_t t0 = time_us_32() >> 10;
   while (true) {
@@ -128,18 +163,25 @@ int main() {
     USB::poll();
     if (USB::connected()) {
       if (!connected) {
+        binmode = false;
 	paused = false;
         connected = true;
         USB::sendtext("sdpwm 1.0 - Daniel Wagenaar 2025");
       }
-      char *input = USB::receivetext();
-      uint32_t t = time_us_32() >> 10;
-      if (input) {
-        parse_and_execute(input);
-        t0 = t;
-      } else if (t - t0 > 100) {
-        // report();
-        t0 = t;
+      if (binmode) {
+        bool err;
+        USB::receivebinary((uint8_t*)binbuffer, 64, false, err);
+        handlebinary(binbuffer, 32);
+      } else {
+        char *input = USB::receivetext();
+        uint32_t t = time_us_32() >> 10;
+        if (input) {
+          parse_and_execute(input);
+          t0 = t;
+        } else if (t - t0 > 100) {
+          // report();
+          t0 = t;
+        }
       }
     } else {
       if (connected) {
