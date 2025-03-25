@@ -1,7 +1,5 @@
-<<<<<<< HEAD
-# sdpwm-firmware
-Firmware for the SDPWM paper
-=======
+# Firmware for the SDPWM paper
+
 ## Introduction
 
 This is the firmware accompanying the paper “Improving PWM output from
@@ -40,4 +38,3 @@ or, if your operating system does not have “make”,
     
 This will leave a “uf2” file in the “build” folder, which you can drag
 onto a Pico as above.
->>>>>>> ecf8a79 (This is the first working version)
