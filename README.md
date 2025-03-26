@@ -73,4 +73,8 @@ The “pause” and “go” commands must strictly come in pairs.
   
 If you send a number (between −32767 and +32767, in decimal ascii representation) as a command, that value is immediately used to drive the output. To queue multiple numbers to be output at the sampling rate implied by “logk”, “per”, and “over”, you can send “pause”, then a sequence of numbers, then “go”. The device has a buffer to hold up to 65,000 samples. When the buffer underruns, the last sample is repeated until more are provided. When the buffer is full, the USB interface blocks until more space appears. If the system is “paused” while the buffer becomes full, there is no point in waiting, so the system resets instead.
 
-To send longer sequences, it may be necessary to switch to “binary mode”, as the ascii-based interface is not very fast. In binary mode, pairs of bytes are interpreted as signed 16-bit integers (low-byte first). To return to ascii mode, send the number 0x8080. Code examples for interacting with the firmware from Python are provided in the “examples” folder.
+To send longer sequences, it may be necessary to switch to “binary mode”, as the ascii-based interface is not very fast. In binary mode, pairs of bytes are interpreted as signed 16-bit integers (low-byte first). To return to ascii mode, send the number 0x8080. 
+
+## Code examples
+
+Code examples for interacting with the firmware from Python are provided in the “examples” folder. As written, these examples assume you have a National Instruments DAQ card to capture the output. Alternatively, you can remove all references to “nidaqmx” from the code and use an oscilloscope to observe the output.
