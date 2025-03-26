@@ -12,7 +12,12 @@ For testing purposes, the circuit is simple enough that it can be built on a bre
 
 ![Breadboard](https://github.com/wagenadl/sdpwm-firmware/blob/main/breadboard.png?raw=true)
 
-(Created with [Fritzing](https://fritzing.org/).)
+(Image created with [Fritzing](https://fritzing.org/).)
+
+The circuit comprises a Raspberry Pi Pico microcontroller (left), the filter described in the paper (middle) and a 5V → ±12V DC-DC converter (right). 
+The results in the paper were obtained with a Texas Instruments [LM833N](https://www.ti.com/product/LM833-N/part-details/LM833N/NOPB) opamp and a 
+Murata [CRV1D0512SC](https://www.murata.com/en-us/products/productdetail?partno=CRV1D0512SC) DC-DC converter, 
+but similarly specified devices may be substituted. Be aware that similar devices may have different pinouts.
 
 ## Firmware installation
 
@@ -68,4 +73,4 @@ The “pause” and “go” commands must strictly come in pairs.
   
 If you send a number (between −32767 and +32767, in decimal ascii representation) as a command, that value is immediately used to drive the output. To queue multiple numbers to be output at the sampling rate implied by “logk”, “per”, and “over”, you can send “pause”, then a sequence of numbers, then “go”. The device has a buffer to hold up to 65,000 samples. When the buffer underruns, the last sample is repeated until more are provided. When the buffer is full, the USB interface blocks until more space appears. If the system is “paused” while the buffer becomes full, there is no point in waiting, so the system resets instead.
 
-To send longer sequences, it may be necessary to switch to “binary mode”, as the ascii-based interface is not very fast. In binary mode, pairs of bytes are interpreted as signed 16-bit integers (low-byte first). To return to ascii mode, send the number 0x8080. Several code examples for interacting with the firmware from Python are provided in the “examples” folder.
+To send longer sequences, it may be necessary to switch to “binary mode”, as the ascii-based interface is not very fast. In binary mode, pairs of bytes are interpreted as signed 16-bit integers (low-byte first). To return to ascii mode, send the number 0x8080. Code examples for interacting with the firmware from Python are provided in the “examples” folder.
