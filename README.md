@@ -14,10 +14,12 @@ For testing purposes, the circuit is simple enough that it can be built on a bre
 
 (Image created with [Fritzing](https://fritzing.org/) and [GIMP](https://www.gimp.org/).)
 
-The circuit comprises a Raspberry Pi Pico microcontroller (left), the filter described in the paper (middle) and a 5V → ±12V DC-DC converter (right). 
+The circuit comprises a Raspberry Pi [Pico](https://www.raspberrypi.com/documentation/microcontrollers/pico-series.html) 
+microcontroller (left), the filter described in the paper (middle) and a 5V → ±12V DC-DC converter (right). 
 The results in the paper were obtained with a Texas Instruments [LM833N](https://www.ti.com/product/LM833-N/part-details/LM833N/NOPB) opamp and a 
 Murata [CRV1D0512SC](https://www.murata.com/en-us/products/productdetail?partno=CRV1D0512SC) DC-DC converter, 
-but similarly specified devices may be substituted. Be aware that similar devices may have different pinouts.
+but similarly specified devices may be substituted. Be aware that similar devices may have different pinouts. 
+We used a v.1 Pico. The firmware should also work with Pico W, Pico 2, or Pico 2 W boards without modification.
 
 ## Firmware installation
 
