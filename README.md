@@ -4,7 +4,7 @@
 
 This is the firmware accompanying the paper “Improving PWM output from
 common MCUs with a Sigma-Delta stage”, now available as a
-[preprint](https://danielwagenaar.net).
+[preprint](https://www.techrxiv.org/users/907341/articles/1281376-improving-pwm-output-from-common-mcus-with-a-software-sigma-delta-stage).
 
 ## Circuit diagram
 
